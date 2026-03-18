@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "shelfer-mobile",
+    "name": "Shelfer POS",
     "slug": "shelfer-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,22 +9,37 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#059669"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shelfer.pos",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Shelfer POS uses the camera to scan product barcodes"
+      }
     },
     "android": {
+      "package": "com.shelfer.pos",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#059669",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": ["CAMERA", "VIBRATE"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-barcode-scanner",
+      ["expo-camera", { "cameraPermission": "Allow Shelfer POS to scan product barcodes" }],
+      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#059669" }]
+    ],
+    "scheme": "shelfer-pos",
+    "extra": {
+      "eas": { "projectId": "shelfer-pos" }
     }
   }
 }
