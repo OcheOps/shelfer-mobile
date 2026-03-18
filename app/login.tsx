@@ -7,7 +7,18 @@ import { saveSession } from '../src/lib/storage/session';
 function decodeJwt(token: string): Record<string, unknown> | null {
   try {
     const base64 = token.split('.')[1];
-    return JSON.parse(atob(base64));
+    // React Native doesn't have atob — decode base64url manually
+    const padded = base64.replace(/-/g, '+').replace(/_/g, '/');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let output = '';
+    for (let i = 0; i < padded.length; i += 4) {
+      const a = chars.indexOf(padded[i]), b = chars.indexOf(padded[i+1]);
+      const c = chars.indexOf(padded[i+2]), d = chars.indexOf(padded[i+3]);
+      output += String.fromCharCode((a << 2) | (b >> 4));
+      if (c !== 64) output += String.fromCharCode(((b & 15) << 4) | (c >> 2));
+      if (d !== 64) output += String.fromCharCode(((c & 3) << 6) | d);
+    }
+    return JSON.parse(output);
   } catch { return null; }
 }
 

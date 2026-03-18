@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { getSession } from '../src/lib/storage/session';
 
@@ -8,27 +8,29 @@ export default function Index() {
 
   useEffect(() => {
     (async () => {
-      const session = await getSession();
-      if (session?.accessToken) {
-        if (session.branchId) {
+      try {
+        const session = await getSession();
+        if (session?.accessToken && session.branchId) {
           router.replace('/pos');
-        } else {
+        } else if (session?.accessToken) {
           router.replace('/branch-select');
+        } else {
+          router.replace('/login');
         }
-      } else {
+      } catch {
         router.replace('/login');
       }
       setChecking(false);
     })();
+    // Safety: force to login after 5s if stuck
+    const t = setTimeout(() => { setChecking(false); try { router.replace('/login'); } catch {} }, 5000);
+    return () => clearTimeout(t);
   }, []);
 
-  if (checking) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#059669" />
-      </View>
-    );
-  }
-
-  return null;
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
+      <ActivityIndicator size="large" color="#059669" />
+      <Text style={{ marginTop: 12, color: '#9ca3af' }}>Loading...</Text>
+    </View>
+  );
 }

@@ -1,12 +1,20 @@
 import * as SQLite from 'expo-sqlite';
 
 let _db: SQLite.SQLiteDatabase | null = null;
+let _initFailed = false;
 
 export async function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (_db) return _db;
-  _db = await SQLite.openDatabaseAsync('shelfer-pos.db');
-  await migrate(_db);
-  return _db;
+  if (_initFailed) throw new Error('SQLite init failed');
+  try {
+    _db = await SQLite.openDatabaseAsync('shelfer-pos.db');
+    await migrate(_db);
+    return _db;
+  } catch (e) {
+    _initFailed = true;
+    console.error('SQLite init error:', e);
+    throw e;
+  }
 }
 
 async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
