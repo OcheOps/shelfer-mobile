@@ -26,7 +26,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["CAMERA", "VIBRATE"]
+      "permissions": [
+        "CAMERA",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,12 +37,26 @@
     "plugins": [
       "expo-router",
       "expo-barcode-scanner",
-      ["expo-camera", { "cameraPermission": "Allow Shelfer POS to scan product barcodes" }],
-      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#059669" }]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Shelfer POS to scan product barcodes"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#059669"
+        }
+      ],
+      "expo-sqlite"
     ],
     "scheme": "shelfer-pos",
     "extra": {
-      "eas": { "projectId": "shelfer-pos" }
+      "eas": {
+        "projectId": "shelfer-pos"
+      }
     }
   }
 }

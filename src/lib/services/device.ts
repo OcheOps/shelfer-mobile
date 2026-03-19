@@ -1,38 +1,32 @@
 import { api } from '../api/client';
 import { getSession, saveSession } from '../storage/session';
 import { getMeta, setMeta } from '../storage/db';
-import type { ApiSuccess } from '../../types/api';
 
 const APP_VERSION = '1.0.0';
 
-/**
- * Register device with backend if not already registered.
- * Returns device ID.
- */
 export async function ensureDeviceRegistered(): Promise<string> {
-  // Check if already registered
   const existingId = await getMeta('device_id');
-  if (existingId) return existingId;
+  if (existingId && existingId !== '' && existingId !== 'undefined') return existingId;
 
   const session = await getSession();
   if (!session?.branchId) throw new Error('No branch selected');
 
   const deviceCode = `MOB-${session.userId.slice(0, 8)}`;
 
-  const res = await api.post<ApiSuccess<{ id: string }>>('/devices/register', {
+  const res: any = await api.post('/devices/register', {
     branch_id: session.branchId,
     device_code: deviceCode,
     app_version: APP_VERSION,
   });
 
-  const deviceId = res.data.id;
+  // fetch client returns JSON directly: { data: { id: "..." } }
+  const deviceId = res?.data?.id;
+  if (!deviceId) throw new Error('Device registration failed');
 
-  // Persist
   await setMeta('device_id', deviceId);
   await setMeta('device_code', deviceCode);
   await setMeta('device_registered_at', new Date().toISOString());
 
-  // Update session
   session.deviceId = deviceId;
   session.deviceCode = deviceCode;
   await saveSession(session);
@@ -49,7 +43,7 @@ export async function getDeviceInfo(): Promise<{ id: string | null; code: string
 }
 
 export async function clearDeviceRegistration(): Promise<void> {
-  const { setMeta } = await import('../storage/db');
   await setMeta('device_id', '');
   await setMeta('device_code', '');
+  await setMeta('device_registered_at', '');
 }

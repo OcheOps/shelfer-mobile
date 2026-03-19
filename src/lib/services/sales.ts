@@ -79,7 +79,8 @@ export async function completeSale(input: CompleteSaleInput): Promise<CompleteSa
  * Branch and tenant context come from JWT + registered device, NOT from the payload.
  */
 async function syncSaleToBackend(saleId: string, session: { deviceId?: string; userId: string }, payload: unknown): Promise<void> {
-  const deviceId = session.deviceId || 'mobile-unknown';
+  if (!session.deviceId) throw new Error('Device not registered');
+  const deviceId = session.deviceId;
 
   const events = [{
     event_id: `mob-${saleId}`,
@@ -137,12 +138,17 @@ export async function processSyncQueue(): Promise<number> {
  * Payload: { sale_ref: string, customer_phone: string }
  */
 export async function sendReceipt(saleId: string, customerPhone: string): Promise<void> {
-  // Get the sale ref from local DB
   const { getLocalSaleById } = await import('../storage/db');
   const sale = await getLocalSaleById(saleId);
   if (!sale) throw new Error('Sale not found locally');
 
   await updateSaleReceiptStatus(saleId, 'pending', customerPhone);
+
+  // If sale hasn't synced to backend yet, save receipt for later
+  if (sale.sync_status !== 'synced') {
+    // Receipt will be retried by the sync worker after sale syncs
+    return;
+  }
 
   try {
     await api.post<ApiSuccess<{ status: string }>>('/receipts/send', {
@@ -152,7 +158,6 @@ export async function sendReceipt(saleId: string, customerPhone: string): Promis
     await updateSaleReceiptStatus(saleId, 'sent', customerPhone);
   } catch {
     await updateSaleReceiptStatus(saleId, 'failed', customerPhone);
-    throw new Error('Receipt send failed');
   }
 }
 
@@ -166,8 +171,9 @@ export async function skipReceipt(saleId: string): Promise<void> {
 export async function retryFailedReceipts(): Promise<number> {
   const { getDb } = await import('../storage/db');
   const db = await getDb();
+  // Retry failed receipts AND pending receipts for sales that have now synced
   const failed = await db.getAllAsync(
-    "SELECT id, external_ref, customer_phone FROM local_sales WHERE receipt_status = 'failed' AND customer_phone != '' LIMIT 10"
+    "SELECT id, external_ref, customer_phone FROM local_sales WHERE receipt_status IN ('failed', 'pending') AND sync_status = 'synced' AND customer_phone != '' LIMIT 10"
   ) as any[];
 
   let sent = 0;

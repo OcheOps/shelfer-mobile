@@ -32,10 +32,17 @@ export default function BranchSelectScreen() {
     try {
       await saveBranch(branch.id, branch.name);
       setStatus('Registering device...');
-      try { await ensureDeviceRegistered(); } catch {}
+      try {
+        await ensureDeviceRegistered();
+      } catch (e: any) {
+        // Device registration failed — show error, don't continue
+        setError('Device setup failed: ' + (e.message || 'unknown error'));
+        setSetting(false);
+        return;
+      }
       setStatus('Loading catalog...');
       try { await refreshCatalog(); } catch {}
-      try { await scheduleDailySummary(20, 0); } catch {} // 8 PM daily summary
+      try { const { scheduleDailySummary } = await import('../src/lib/services/notifications'); await scheduleDailySummary(20, 0); } catch {}
       router.replace('/pos');
     } catch (err: any) { setError(err.message); setSetting(false); }
   };
